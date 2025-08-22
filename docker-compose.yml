@@ -1,0 +1,59 @@
+services:
+  contentservice:
+    container_name: content_service
+    build:
+      context: .
+      dockerfile: src/ContentService/ContentService.API/Dockerfile
+    ports:
+      - "8081:8080" 
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Application__PostgreSqlServerConfig__ConnectionString=Host=content-db;Port=5432;Database=content_db;Username=contentuser;Password=contentpassword
+      - Application__UserApiConfig__BaseUrl=http://userservice:8080/api
+    depends_on:
+      - content-db
+
+  userservice:
+    container_name: user_service
+    build:
+      context: .
+      dockerfile: src/UserService/UserService.API/Dockerfile
+    ports:
+      - "8082:8080" 
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Application__PostgreSqlServerConfig__ConnectionString=Host=user-db;Port=5432;Database=user_db;Username=useruser;Password=userpassword
+    depends_on:
+      - user-db
+
+  content-db:
+    container_name: content_database
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=content_db
+      - POSTGRES_USER=contentuser
+      - POSTGRES_PASSWORD=contentpassword
+    ports:
+      - "5433:5432"
+    volumes:
+      - content_data:/var/lib/postgresql/data
+      - ./db-scripts/content-db/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+
+  user-db:
+    container_name: user_database
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=user_db
+      - POSTGRES_USER=useruser
+      - POSTGRES_PASSWORD=userpassword
+    ports:
+      - "5434:5432"
+    volumes:
+      - user_data:/var/lib/postgresql/data
+      - ./db-scripts/user-db/seed.sql:/docker-entrypoint-initdb.d/seed.sql
+
+volumes:
+  content_data:
+  user_data:
